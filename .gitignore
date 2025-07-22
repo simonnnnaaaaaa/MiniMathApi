@@ -1,0 +1,14 @@
+.venv/
+venv/
+
+__pycache__/
+*.pyc
+*.py[cod]
+*.db
+
+app/db.py
+app/models.py
+
+.idea/
+
+
