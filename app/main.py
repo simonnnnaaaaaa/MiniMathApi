@@ -98,3 +98,33 @@ def calc_fact(
 
     return FactResponse(result=value)
 
+# --------------------------------------------------------------
+from datetime import datetime
+from typing import List
+
+class LogEntry(BaseModel):
+    id: int
+    operation: str
+    input_json: str
+    result: str
+    ts: datetime
+
+@app.get("/history", response_model=List[LogEntry])
+def get_history(
+    page: int = 1,
+    size: int = 50,
+    session: Session = Depends(get_session),
+):
+    if page < 1 or size < 1:
+        raise HTTPException(status_code=400, detail="page and size must be >= 1")
+
+    offset = (page - 1) * size
+
+    rows = (
+        session.query(RequestLog)
+        .order_by(RequestLog.id.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+    return rows
