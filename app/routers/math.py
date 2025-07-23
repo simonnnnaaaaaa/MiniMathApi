@@ -10,21 +10,26 @@ from app.services import pow_int, fib, fact
 from app.db import get_session
 from app.models import RequestLog
 
-router = APIRouter(tags=["math"])   # „/” prefix implicit
+router = APIRouter(tags=["math"])  # „/” prefix implicit
+
 
 # --------- modele Pydantic -------------
 class PowRequest(BaseModel):
     x: int
     y: int
 
+
 class PowResponse(BaseModel):
     result: int
+
 
 class FibResponse(BaseModel):
     result: int
 
+
 class FactResponse(BaseModel):
     result: int
+
 
 class LogEntry(BaseModel):
     id: int
@@ -33,12 +38,15 @@ class LogEntry(BaseModel):
     result: str
     ts: datetime
 
+
 # --------- endpoint‑uri -----------------
 @router.post("/pow", response_model=PowResponse)
 def calc_pow(body: PowRequest, session: Session = Depends(get_session)):
     value = pow_int(body.x, body.y)
     session.add(
-        RequestLog(operation="pow", input_json=body.model_dump_json(), result=str(value))
+        RequestLog(
+            operation="pow", input_json=body.model_dump_json(), result=str(value)
+        )
     )
     session.commit()
     return PowResponse(result=value)
