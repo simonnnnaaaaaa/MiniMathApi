@@ -1,14 +1,20 @@
+# ——— Medii virtuale ——————————————————————
 .venv/
 venv/
 
+# ——— Fișiere generate de Python ——————————
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 *.py[cod]
+
+# ——— Baza de date SQLite ——————————————
 *.db
 
-app/db.py
-app/models.py
-
+# ——— Fişiere de configurare IDE (PyCharm) ——
 .idea/
 
-
+# ——— Cod SQLite vechi (lăsat local) ——————
+app/db.py
+app/models.py

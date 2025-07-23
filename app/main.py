@@ -1,18 +1,12 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
-from app.services import pow_int
-from app.services import pow_int, fib
-from app.services import pow_int, fib, fact
-
-from app.db import  get_session
 from sqlmodel import Session
-from app.models import RequestLog
+from app.services import pow_int, fib, fact
+from app.db       import init_db, get_session
+from app.models   import RequestLog
 
-
-
-from app.db import init_db
 init_db()
-
+print("✅ init_db() called, DB ready")
 app = FastAPI(title="Mini-Math API")
 
 # --- MODELE -------------------------------------------------
@@ -30,47 +24,77 @@ class FactResponse(BaseModel):
     result: int
 
 # --- ENDPOINTS ------------------------------------------------
-#@app.post("/pow", response_model=PowResponse)
-# def calc_pow(body: PowRequest):
-#     value = pow_int(body.x, body.y)
-#     return PowResponse(result=value)
+@app.get("/")
+def read_root():
+    print("🔍 DEBUG: read_root was called")
+    return {"message": "Hello from FastAPI 👋"}
+
+
 
 @app.post("/pow", response_model=PowResponse)
 def calc_pow(
     body: PowRequest,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
     value = pow_int(body.x, body.y)
 
-    # --- logăm cererea în SQLite -------------------------
     log = RequestLog(
         operation="pow",
         input_json=body.model_dump_json(),
-        result=str(value)
+        result=str(value),
     )
     session.add(log)
     session.commit()
-    # -----------------------------------------------------
 
     return PowResponse(result=value)
 
 
-
-
-@app.get("/")
-def read_root():
-    return {"message": "Hello from FastAPI 👋"}
-
 @app.get("/fib/{n}", response_model=FibResponse)
-def calc_fib(n: int):
-    """
-    Returnează F(n) (0-based): F(0)=0, F(1)=1…
-    Restricționează n la interval rezonabil (ex: 0-9 999) dacă vrei.
-    """
+def calc_fib(
+    n: int,
+    session: Session = Depends(get_session),
+):
+    # validare simplă
+    if n < 0:
+        raise HTTPException(status_code=400, detail="n must be >= 0")
+
+    # 1) calcul
     value = fib(n)
+
+    print(f"DEBUG fib called: n={n}, value={value}")
+
+    # 2) log
+    log = RequestLog(
+        operation="fib",
+        input_json=str(n),
+        result=str(value),
+    )
+    session.add(log)
+    session.commit()
+
+    # 3) răspuns
     return FibResponse(result=value)
 
+
 @app.get("/fact/{n}", response_model=FactResponse)
-def calc_fact(n: int):
+def calc_fact(
+    n: int,
+    session: Session = Depends(get_session),
+):
+    if n < 0:
+        raise HTTPException(status_code=400, detail="n must be >= 0")
+
     value = fact(n)
+
+    print(f"DEBUG fact(): called with n={n}, computed value={value}")
+
+    log = RequestLog(
+        operation="fact",
+        input_json=str(n),
+        result=str(value),
+    )
+    session.add(log)
+    session.commit()
+
     return FactResponse(result=value)
+
