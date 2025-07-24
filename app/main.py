@@ -10,6 +10,7 @@ app = FastAPI(title="Mini-Math API")
 app.include_router(math_router.router)  # <— montăm toate rutele
 Instrumentator().instrument(app).expose(app)
 
+
 @app.get("/")
 def read_root():
     return {"message": "Hello from FastAPI 👋"}
