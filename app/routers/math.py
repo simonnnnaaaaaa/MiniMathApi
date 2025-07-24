@@ -9,6 +9,10 @@ from sqlmodel import Session
 from app.services import pow_int, fib, fact
 from app.db import get_session
 from app.models import RequestLog
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+
+executor = ThreadPoolExecutor(max_workers=5)
 
 router = APIRouter(tags=["math"])  # „/” prefix implicit
 
@@ -40,36 +44,69 @@ class LogEntry(BaseModel):
 
 
 # --------- endpoint‑uri -----------------
+# @router.post("/pow", response_model=PowResponse)
+# def calc_pow(body: PowRequest, session: Session = Depends(get_session)):
+#     value = pow_int(body.x, body.y)
+#     session.add(
+#         RequestLog(
+#             operation="pow", input_json=body.model_dump_json(), result=str(value)
+#         )
+#     )
+#     session.commit()
+#     return PowResponse(result=value)
 @router.post("/pow", response_model=PowResponse)
-def calc_pow(body: PowRequest, session: Session = Depends(get_session)):
-    value = pow_int(body.x, body.y)
-    session.add(
-        RequestLog(
-            operation="pow", input_json=body.model_dump_json(), result=str(value)
-        )
-    )
+async def calc_pow(body: PowRequest, session: Session = Depends(get_session)):
+    loop = asyncio.get_running_loop()
+    value = await loop.run_in_executor(executor, pow_int, body.x, body.y)
+
+    log = RequestLog(operation="pow", input_json=body.model_dump_json(), result=str(value))
+    session.add(log)
     session.commit()
+
     return PowResponse(result=value)
 
 
+
+# @router.get("/fib/{n}", response_model=FibResponse)
+# def calc_fib(n: int, session: Session = Depends(get_session)):
+#     if n < 0:
+#         raise HTTPException(status_code=400, detail="n must be >= 0")
+#     value = fib(n)
+#     session.add(RequestLog(operation="fib", input_json=str(n), result=str(value)))
+#     session.commit()
+#     return FibResponse(result=value)
 @router.get("/fib/{n}", response_model=FibResponse)
-def calc_fib(n: int, session: Session = Depends(get_session)):
-    if n < 0:
-        raise HTTPException(status_code=400, detail="n must be >= 0")
-    value = fib(n)
-    session.add(RequestLog(operation="fib", input_json=str(n), result=str(value)))
+async def calc_fib(n: int, session: Session = Depends(get_session)):
+    loop = asyncio.get_running_loop()
+    value = await loop.run_in_executor(executor, fib, n)
+
+    log = RequestLog(operation="fib", input_json=str(n), result=str(value))
+    session.add(log)
     session.commit()
+
     return FibResponse(result=value)
 
 
 @router.get("/fact/{n}", response_model=FactResponse)
-def calc_fact(n: int, session: Session = Depends(get_session)):
-    if n < 0:
-        raise HTTPException(status_code=400, detail="n must be >= 0")
-    value = fact(n)
-    session.add(RequestLog(operation="fact", input_json=str(n), result=str(value)))
+async def calc_fact(n: int, session: Session = Depends(get_session)):
+    loop = asyncio.get_running_loop()
+    value = await loop.run_in_executor(executor, fact, n)
+
+    log = RequestLog(operation="fact", input_json=str(n), result=str(value))
+    session.add(log)
     session.commit()
+
     return FactResponse(result=value)
+
+
+# @router.get("/fact/{n}", response_model=FactResponse)
+# def calc_fact(n: int, session: Session = Depends(get_session)):
+#     if n < 0:
+#         raise HTTPException(status_code=400, detail="n must be >= 0")
+#     value = fact(n)
+#     session.add(RequestLog(operation="fact", input_json=str(n), result=str(value)))
+#     session.commit()
+#     return FactResponse(result=value)
 
 
 @router.get("/history", response_model=List[LogEntry])
