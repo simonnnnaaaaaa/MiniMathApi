@@ -1,13 +1,13 @@
-# app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from app.db import init_db
-from app.routers import math as math_router  # <— noul import
+from app.routers import math as math_router
 from prometheus_fastapi_instrumentator import Instrumentator
+from app.deps import verify_api_key
 
 init_db()
-app = FastAPI(title="Mini-Math API")
+app = FastAPI(title="Mini-Math API", dependencies=[Depends(verify_api_key)])
 
-app.include_router(math_router.router)  # <— montăm toate rutele
+app.include_router(math_router.router)
 Instrumentator().instrument(app).expose(app)
 
 
