@@ -1,10 +1,11 @@
-# app/routers/math.py
 from typing import List
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session
+
+from app.deps import verify_api_key
 
 from app.services import pow_int, fib, fact
 from app.db import get_session
@@ -14,7 +15,11 @@ import asyncio
 
 executor = ThreadPoolExecutor(max_workers=5)
 
-router = APIRouter(tags=["math"])  # „/” prefix implicit
+router = APIRouter(
+    prefix="",                 # păstrezi rutele cum erau (/pow, /fib/{n}, /fact/{n})
+    tags=["math"],
+    dependencies=[Depends(verify_api_key)]   # ⬅️ AUTH aici, pe toate rutele din acest router
+)
 
 
 # --------- modele Pydantic -------------
